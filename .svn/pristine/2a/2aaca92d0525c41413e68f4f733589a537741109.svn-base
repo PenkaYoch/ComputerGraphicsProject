@@ -1,0 +1,49 @@
+package draw.Model;
+
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.Point;
+import java.awt.Rectangle;
+
+import javax.swing.BorderFactory;
+import javax.swing.border.Border;
+
+public class EllipseShape extends draw.Model.Shape {
+	
+	public EllipseShape(Rectangle rect) {
+	        super(rect);
+	    }
+
+	public EllipseShape(draw.Model.EllipseShape rectangle) {
+	    }
+
+	/**
+	 * �������� �� ������������� �� ����� point ��� �������������. � ������ ��
+	 * ������������ ���� ����� ���� �� �� ���� �����������, ������ ������������
+	 * ������� � ���� �� ����������� ���� Shape, ����� ��������� ���� ������� � �
+	 * ���������� ������������ �� �������� (� ��� ������� � �������� � ���� ������).
+	 */
+	@Override
+	public boolean Contains(Point point) {
+		if (super.Contains(point)) {
+			// �������� ���� � � ������ ����, ��� ������� � � ���������� ������������.
+			// � ������ �� ������������ - �������� ������� true
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	/**
+	 * ������, ������������� ���������� ��������.
+	 */
+	@Override
+	public void DrawSelf(Graphics grfx) {
+		super.DrawSelf(grfx);
+		Rectangle r = getRectangle();
+		grfx.setColor(getFillColor());
+		grfx.fillOval(r.x, r.y, r.width, r.height);
+		grfx.setColor(getBorderColor());
+		grfx.drawOval(r.x, r.y, r.width, r.height);
+	}
+}
