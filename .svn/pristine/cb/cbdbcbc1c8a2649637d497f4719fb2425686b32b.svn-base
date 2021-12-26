@@ -1,0 +1,678 @@
+/*
+ * DrawView.java
+ */
+
+package draw.GUI;
+
+import org.jdesktop.application.Action;
+import org.jdesktop.application.SingleFrameApplication;
+import org.jdesktop.application.FrameView;
+import org.jdesktop.application.TaskMonitor;
+import org.jdesktop.application.ResourceMap;
+
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Desktop;
+import java.awt.Point;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.File;
+import java.io.IOException;
+
+import javax.swing.Timer;
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JColorChooser;
+import javax.swing.JComboBox;
+import javax.swing.JDialog;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JPanel;
+import javax.swing.JProgressBar;
+import javax.swing.JToggleButton;
+import javax.swing.JToolBar;
+
+import draw.Processors.DialogProcessor;
+//import javafx.collections.ObservableList;
+
+/**
+ * The application's main frame.
+ */
+public class DrawView extends FrameView {
+
+	/**
+	 * Агрегирания диалогов процесор. Улеснява манипулацията на модела.
+	 */
+	private DialogProcessor dialogProcessor;
+
+	/**
+	 * Достъп до доалоговия процесор.
+	 * 
+	 * @return Инстанцията на диалоговия процесор
+	 */
+	public DialogProcessor getDialogProcessor() {
+		return dialogProcessor;
+	}
+
+	public DrawView(SingleFrameApplication app) {
+		super(app);
+
+		initComponents();
+
+		// Създава се инстанция от класа на диалоговия процесор.
+		dialogProcessor = new DialogProcessor();
+
+		// Създаваме поле за рисуване и го правим главен компонент в изгледа.
+		DrawViewPortPaint drawViewPortPaint = new draw.GUI.DrawViewPortPaint(this);
+		setComponent(drawViewPortPaint);
+		// Прихващане на събитията на мишката.
+		drawViewPortPaint.addMouseListener(new java.awt.event.MouseAdapter() {
+			public void mousePressed(java.awt.event.MouseEvent evt) {				
+				if (DragToggleButton.isSelected()) {
+					dialogProcessor.setSelection(dialogProcessor.ContainsPoint(evt.getPoint()));
+					if (dialogProcessor.getSelection() != null) {
+						statusMessageLabel.setText("Последно действие: Селекция на примитив");
+						// dialogProcessor.setIsDragging(true);
+						dialogProcessor.setLastLocation(evt.getPoint());
+						dialogProcessor.repaint();
+						DragToggleButton.setSelected(false);
+					}
+				} 
+				else {
+					dialogProcessor.setSelection(dialogProcessor.ContainsPoint(evt.getPoint()));
+					dialogProcessor.setStartPoint(evt.getPoint());
+				}
+			}
+
+			public void mouseReleased(java.awt.event.MouseEvent evt) {
+				if(DrawPolygonButton.isSelected()) {
+					prepareToCreateShape(evt.getPoint());
+					dialogProcessor.AddRandomPolygon(true);
+					statusMessageLabel.setText("Последно действие: Рисуване на многоъгълник");
+					dialogProcessor.repaint();
+					DrawPolygonButton.setSelected(false);
+				} else if(DrawRectangleButton.isSelected()) {
+					prepareToCreateShape(evt.getPoint());
+					dialogProcessor.AddRandomRectangle(true);
+					statusMessageLabel.setText("Последно действие: Рисуване на правоъгълник");
+					dialogProcessor.repaint();
+					DrawRectangleButton.setSelected(false);
+				} else if(DrawEllipseButton.isSelected()) {
+					prepareToCreateShape(evt.getPoint());
+					dialogProcessor.AddRandomEllipse(true);
+					statusMessageLabel.setText("Последно действие: Рисуване на елипса");
+					dialogProcessor.repaint();
+					DrawEllipseButton.setSelected(false);
+				} else if(DrawSquareButton.isSelected()) {
+					prepareToCreateShape(evt.getPoint());
+					dialogProcessor.AddRandomSquare(true);
+					statusMessageLabel.setText("Последно действие: Рисуване на квадрат");
+					dialogProcessor.repaint();
+					DrawSquareButton.setSelected(false);
+				} else if(DrawSegmentButton.isSelected()) {
+					prepareToCreateShape(evt.getPoint());
+					dialogProcessor.AddRandomSegment(true);
+					statusMessageLabel.setText("Последно действие: Рисуване на отсечка");
+					dialogProcessor.repaint();
+					DrawSegmentButton.setSelected(false);
+				}
+			
+				// dialogProcessor.setIsDragging(false);
+			}
+		});
+		drawViewPortPaint.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+			public void mouseDragged(java.awt.event.MouseEvent evt) {
+				if(DrawPolygonButton.isSelected()) {
+					prepareToCreateShape(evt.getPoint());
+					dialogProcessor.AddRandomPolygon(false);
+					statusMessageLabel.setText("Последно действие: Рисуване на многоъгълник");
+					dialogProcessor.repaint();
+				} else if(DrawRectangleButton.isSelected()) {
+					prepareToCreateShape(evt.getPoint());
+					dialogProcessor.AddRandomRectangle(false);
+					statusMessageLabel.setText("Последно действие: Рисуване на правоъгълник");
+					dialogProcessor.repaint();
+				} else if(DrawEllipseButton.isSelected()) {
+					prepareToCreateShape(evt.getPoint());
+					dialogProcessor.AddRandomEllipse(false);
+					statusMessageLabel.setText("Последно действие: Рисуване на елипса");
+					dialogProcessor.repaint();
+				} else if(DrawSquareButton.isSelected()) {
+					prepareToCreateShape(evt.getPoint());
+					dialogProcessor.AddRandomSquare(false);
+					statusMessageLabel.setText("Последно действие: Рисуване на квадрат");
+					dialogProcessor.repaint();
+				} else if(DrawSegmentButton.isSelected()) {
+					prepareToCreateShape(evt.getPoint());
+					dialogProcessor.AddRandomSegment(false);
+					statusMessageLabel.setText("Последно действие: Рисуване на отсечка");
+					dialogProcessor.repaint();
+				} else {
+				if (dialogProcessor.getSelection() != null)
+					statusMessageLabel.setText("Последно действие: Влачене");
+				dialogProcessor.TranslateTo(evt.getPoint());
+				dialogProcessor.repaint();
+				 }
+			}
+		});
+
+		// status bar initialization - message timeout, idle icon and busy animation,
+		// etc
+		ResourceMap resourceMap = getResourceMap();
+		int messageTimeout = resourceMap.getInteger("StatusBar.messageTimeout");
+		messageTimer = new Timer(messageTimeout, new ActionListener() {
+
+			public void actionPerformed(ActionEvent e) {
+				statusMessageLabel.setText("");
+			}
+		});
+		messageTimer.setRepeats(false);
+		int busyAnimationRate = resourceMap.getInteger("StatusBar.busyAnimationRate");
+		for (int i = 0; i < busyIcons.length; i++) {
+			busyIcons[i] = resourceMap.getIcon("StatusBar.busyIcons[" + i + "]");
+		}
+		busyIconTimer = new Timer(busyAnimationRate, new ActionListener() {
+
+			public void actionPerformed(ActionEvent e) {
+				busyIconIndex = (busyIconIndex + 1) % busyIcons.length;
+				statusAnimationLabel.setIcon(busyIcons[busyIconIndex]);
+			}
+		});
+		idleIcon = resourceMap.getIcon("StatusBar.idleIcon");
+		statusAnimationLabel.setIcon(idleIcon);
+		progressBar.setVisible(false);
+
+		// Икона на главния прозорец
+		ImageIcon icon = resourceMap.getImageIcon("DrawIcon");
+		getFrame().setIconImage(icon.getImage());
+
+		// connecting action tasks to status bar via TaskMonitor
+		TaskMonitor taskMonitor = new TaskMonitor(getApplication().getContext());
+		taskMonitor.addPropertyChangeListener(new java.beans.PropertyChangeListener() {
+
+			public void propertyChange(java.beans.PropertyChangeEvent evt) {
+				String propertyName = evt.getPropertyName();
+				if ("started".equals(propertyName)) {
+					if (!busyIconTimer.isRunning()) {
+						statusAnimationLabel.setIcon(busyIcons[0]);
+						busyIconIndex = 0;
+						busyIconTimer.start();
+					}
+					progressBar.setVisible(true);
+					progressBar.setIndeterminate(true);
+				} else if ("done".equals(propertyName)) {
+					busyIconTimer.stop();
+					statusAnimationLabel.setIcon(idleIcon);
+					progressBar.setVisible(false);
+					progressBar.setValue(0);
+				} else if ("message".equals(propertyName)) {
+					String text = (String) (evt.getNewValue());
+					statusMessageLabel.setText((text == null) ? "" : text);
+					messageTimer.restart();
+				} else if ("progress".equals(propertyName)) {
+					int value = (Integer) (evt.getNewValue());
+					progressBar.setVisible(true);
+					progressBar.setIndeterminate(false);
+					progressBar.setValue(value);
+				}
+			}
+		});
+	}
+	
+	/**
+	 * Показва диалогова кутия с информация за програмата.
+	 */
+	@Action
+	public void showAboutBox() {
+		if (aboutBox == null) {
+			JFrame mainFrame = DrawApp.getApplication().getMainFrame();
+			aboutBox = new DrawAboutBox(mainFrame);
+			aboutBox.setLocationRelativeTo(mainFrame);
+		}
+		DrawApp.getApplication().show(aboutBox);
+	}
+
+	/**
+	 * Бутон, който поставя на произволно място правоъгълник със зададените размери.
+	 * Променя се лентата със състоянието и се инвалидира контрола, в който
+	 * визуализираме.
+	 */
+	@Action
+	public void drawRectangle() {
+		this.selectButton(DrawRectangleButton);
+//		dialogProcessor.AddRandomRectangle();
+//		statusMessageLabel.setText("Последно действие: Рисуване на правоъгълник");
+	}
+	
+	public void drawOldRectangle() {
+//		this.deselectLastSelected();
+//		DrawRectangleButton.setSelected(true);
+//		this.lastSelectedButton = DrawRectangleButton;
+//		this.selectButton(DrawRectangleButton);
+		dialogProcessor.AddRandomCircle();
+//		statusMessageLabel.setText("Последно действие: Рисуване на правоъгълник");
+		dialogProcessor.repaint();
+	}
+
+	/**
+	 * Бутон, който поставя на произволно място правоъгълник със зададените размери.
+	 * Променя се лентата със състоянието и се инвалидира контрола, в който
+	 * визуализираме.
+	 */
+	@Action
+	public void drawEllipse() {
+		this.selectButton(DrawEllipseButton);
+//		dialogProcessor.AddRandomEllipse();
+//		statusMessageLabel.setText("Последно действие: Рисуване на елипса");
+//		dialogProcessor.repaint();
+	}
+
+	/**
+	 * Бутон, който поставя на произволно място правоъгълник със зададените размери.
+	 * Променя се лентата със състоянието и се инвалидира контрола, в който
+	 * визуализираме.
+	 */
+	@Action
+	public void drawSquare() {
+		this.selectButton(DrawSquareButton);
+//		dialogProcessor.AddRandomSquare();
+//		statusMessageLabel.setText("Последно действие: Рисуване на квадрат");
+//		dialogProcessor.repaint();
+	}
+
+	/**
+	 * Бутон, който поставя на произволно място правоъгълник със зададените размери.
+	 * Променя се лентата със състоянието и се инвалидира контрола, в който
+	 * визуализираме.
+	 */
+	@Action
+	public void drawSegment() {
+		this.selectButton(DrawSegmentButton);
+//		dialogProcessor.AddRandomSegment(true);
+//		statusMessageLabel.setText("Последно действие: Рисуване на отсечка");
+//		dialogProcessor.repaint();
+	}
+
+	/**
+	 * Бутон, който поставя на произволно място правоъгълник със зададените размери.
+	 * Променя се лентата със състоянието и се инвалидира контрола, в който
+	 * визуализираме.
+	 */
+	@Action
+	public void drawPolygon() {
+		this.selectButton(DrawPolygonButton);
+//		dialogProcessor.AddRandomPolygon();
+//		statusMessageLabel.setText("Последно действие: Рисуване на многоъгълник");
+//		dialogProcessor.repaint();
+	}
+
+	/**
+	 * Бутон, който поставя на произволно място правоъгълник със зададените размери.
+	 * Променя се лентата със състоянието и се инвалидира контрола, в който
+	 * визуализираме.
+	 */
+	@Action
+	public void selectBorderColor() {
+		this.selectButton(BorderColorPicker);
+		dialogProcessor.borderColorSelection(this.getFrame()); 
+		statusMessageLabel.setText("Последно действие: Смяна на цвета на линията на избрания елемент");
+		dialogProcessor.repaint();
+	}
+
+	@Action
+	public void selectFillColor() {
+		this.selectButton(FillColorPicker);
+		dialogProcessor.fillColorSelection(this.getFrame()); 
+		statusMessageLabel.setText("Последно действие:  Смяна на цвета на избрания елемент");
+		dialogProcessor.repaint();
+	}
+
+	@Action
+	public void selectBorderSize() {
+		int size = this.borderSizeComboBox.getSelectedIndex() + 10;
+		dialogProcessor.borderSizeSelection(size);
+		statusMessageLabel.setText("Последно действие:  Смяна на дебелината на линията на избрания елемент");
+		dialogProcessor.repaint();
+	}
+
+	@Action
+	public void rotateLeft() {
+		dialogProcessor.rotate(false);
+		dialogProcessor.repaint();
+	}
+	
+	@Action
+	public void rotateRight() {
+		dialogProcessor.rotate(true);
+		dialogProcessor.repaint();
+	}
+	
+	@Action
+	public void save() {
+		dialogProcessor.serializeObject();
+	}
+	
+	@Action
+	public void openFile() {
+//		try {
+//		    Desktop.getDesktop().open(new File("C:/Users/Penka"));
+//		} catch (IOException e) {
+//		    e.printStackTrace();
+//		}
+		dialogProcessor.deserializeObject();
+		dialogProcessor.repaint();
+	}
+	
+	public void selectFileFromFileExplorer() {
+//		Runtime.getRuntime().exec("explorer.exe /select," + path);
+		try {
+		    Desktop.getDesktop().open(new File("C:/Users/"));
+		} catch (IOException e) {
+		    e.printStackTrace();
+		}
+	}
+	
+	/**
+	 * This method is called from within the constructor to initialize the form.
+	 * WARNING: Do NOT modify this code. The content of this method is always
+	 * regenerated by the Form Editor.
+	 */
+	@SuppressWarnings("unchecked")
+	// <editor-fold defaultstate="collapsed" desc="Generated
+	// Code">//GEN-BEGIN:initComponents
+	private void initComponents() {
+
+		menuBar = new javax.swing.JMenuBar();
+		javax.swing.JMenu fileMenu = new javax.swing.JMenu();
+		javax.swing.JMenuItem exitMenuItem = new javax.swing.JMenuItem();
+		javax.swing.JMenuItem saveMenuItem = new javax.swing.JMenuItem();
+		javax.swing.JMenuItem openFileMenuItem = new javax.swing.JMenuItem();
+		editMenu = new javax.swing.JMenu();
+		imageMenu = new javax.swing.JMenu();
+		javax.swing.JMenu helpMenu = new javax.swing.JMenu();
+		javax.swing.JMenuItem aboutMenuItem = new javax.swing.JMenuItem();
+		statusPanel = new javax.swing.JPanel();
+		javax.swing.JSeparator statusPanelSeparator = new javax.swing.JSeparator();
+		statusMessageLabel = new javax.swing.JLabel();
+		statusAnimationLabel = new javax.swing.JLabel();
+		progressBar = new javax.swing.JProgressBar();
+		toolBar = new javax.swing.JToolBar();
+		DrawRectangleButton = new javax.swing.JButton();
+//		DrawCicleShapeButton = new javax.swing.JButton();
+		DrawEllipseButton = new javax.swing.JButton();
+		DrawSquareButton = new javax.swing.JButton();
+		DrawSegmentButton = new javax.swing.JButton();
+		DrawPolygonButton = new javax.swing.JButton();
+		BorderColorPicker = new JButton();
+		FillColorPicker = new JButton();
+		borderSizeComboBox = new JComboBox<String>(items);
+		RotateLeftButton = new JButton();
+		RotateRightButton = new JButton();
+		ExportButton = new JButton();
+		
+		DragToggleButton = new javax.swing.JToggleButton();
+		viewPort = new javax.swing.JPanel();
+
+		menuBar.setName("menuBar"); // NOI18N
+
+		org.jdesktop.application.ResourceMap resourceMap = org.jdesktop.application.Application
+				.getInstance(draw.GUI.DrawApp.class).getContext().getResourceMap(DrawView.class);
+		fileMenu.setText(resourceMap.getString("fileMenu.text")); // NOI18N
+		fileMenu.setName("fileMenu"); // NOI18N
+
+		javax.swing.ActionMap actionMap = org.jdesktop.application.Application.getInstance(draw.GUI.DrawApp.class)
+				.getContext().getActionMap(DrawView.class, this);
+
+		openFileMenuItem.setAction(actionMap.get("openFile")); // NOI18N
+		openFileMenuItem.setName("openFileMenuItem"); // NOI18N
+		openFileMenuItem.setText(resourceMap.getString("openFileMenuItem.text")); // NOI18N
+		fileMenu.add(openFileMenuItem);
+		
+		saveMenuItem.setAction(actionMap.get("save")); // NOI18N
+		saveMenuItem.setName("saveMenuItem"); // NOI18N
+		saveMenuItem.setText(resourceMap.getString("saveMenuItem.text")); // NOI18N
+		fileMenu.add(saveMenuItem);
+		
+		exitMenuItem.setAction(actionMap.get("quit")); // NOI18N
+		exitMenuItem.setName("exitMenuItem"); // NOI18N
+		fileMenu.add(exitMenuItem);
+
+		menuBar.add(fileMenu);
+
+		editMenu.setText(resourceMap.getString("editMenu.text")); // NOI18N
+		editMenu.setName("editMenu"); // NOI18N
+		menuBar.add(editMenu);
+
+		imageMenu.setText(resourceMap.getString("imageMenu.text")); // NOI18N
+		imageMenu.setName("imageMenu"); // NOI18N
+		menuBar.add(imageMenu);
+
+		helpMenu.setText(resourceMap.getString("helpMenu.text")); // NOI18N
+		helpMenu.setName("helpMenu"); // NOI18N
+
+		aboutMenuItem.setAction(actionMap.get("showAboutBox")); // NOI18N
+		aboutMenuItem.setName("aboutMenuItem"); // NOI18N
+		helpMenu.add(aboutMenuItem);
+
+		menuBar.add(helpMenu);
+
+		statusPanel.setName("statusPanel"); // NOI18N
+
+		statusPanelSeparator.setName("statusPanelSeparator"); // NOI18N
+
+		statusMessageLabel.setName("statusMessageLabel"); // NOI18N
+
+		statusAnimationLabel.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+		statusAnimationLabel.setName("statusAnimationLabel"); // NOI18N
+
+		progressBar.setName("progressBar"); // NOI18N
+
+		javax.swing.GroupLayout statusPanelLayout = new javax.swing.GroupLayout(statusPanel);
+		statusPanel.setLayout(statusPanelLayout);
+		statusPanelLayout.setHorizontalGroup(statusPanelLayout
+				.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+				.addComponent(statusPanelSeparator, javax.swing.GroupLayout.DEFAULT_SIZE, 591, Short.MAX_VALUE)
+				.addGroup(statusPanelLayout.createSequentialGroup().addContainerGap().addComponent(statusMessageLabel)
+						.addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 421, Short.MAX_VALUE)
+						.addComponent(progressBar, javax.swing.GroupLayout.PREFERRED_SIZE,
+								javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+						.addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+						.addComponent(statusAnimationLabel).addContainerGap()));
+		statusPanelLayout.setVerticalGroup(statusPanelLayout
+				.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+				.addGroup(statusPanelLayout.createSequentialGroup()
+						.addComponent(statusPanelSeparator, javax.swing.GroupLayout.PREFERRED_SIZE, 2,
+								javax.swing.GroupLayout.PREFERRED_SIZE)
+						.addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED,
+								javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+						.addGroup(statusPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+								.addComponent(statusMessageLabel).addComponent(statusAnimationLabel)
+								.addComponent(progressBar, javax.swing.GroupLayout.PREFERRED_SIZE,
+										javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+						.addGap(3, 3, 3)));
+
+		toolBar.setRollover(true);
+		toolBar.setName("toolBar"); // NOI18N
+
+		DrawRectangleButton.setAction(actionMap.get("drawRectangle")); // NOI18N
+		DrawRectangleButton.setIcon(resourceMap.getIcon("DrawRectangleButton.icon")); // NOI18N
+		DrawRectangleButton.setText(resourceMap.getString("DrawRectangleButton.text")); // NOI18N
+		DrawRectangleButton.setFocusable(false);
+		DrawRectangleButton.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+		DrawRectangleButton.setName("DrawRectangleButton"); // NOI18N
+		DrawRectangleButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+		toolBar.add(DrawRectangleButton);
+		
+//		DrawCicleShapeButton.setAction(actionMap.get("drawOldRectangle")); // NOI18N
+//		DrawCicleShapeButton.setIcon(resourceMap.getIcon("DrawCircleShapeButton.icon")); // NOI18N
+//		DrawCicleShapeButton.setText(resourceMap.getString("DrawRectangleButton.text")); // NOI18N
+//		DrawCicleShapeButton.setFocusable(false);
+//		DrawCicleShapeButton.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+//		DrawCicleShapeButton.setName("DrawOldRectangleButton"); // NOI18N
+//		DrawCicleShapeButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+//		toolBar.add(DrawCicleShapeButton);
+		
+		DrawEllipseButton.setAction(actionMap.get("drawEllipse")); // NOI18N
+		DrawEllipseButton.setIcon(resourceMap.getIcon("DrawEllipseButton.icon")); // NOI18N
+		DrawEllipseButton.setText(resourceMap.getString("DrawRectangleButton.text")); // NOI18N
+		DrawEllipseButton.setFocusable(false);
+		DrawEllipseButton.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+		DrawEllipseButton.setName("DrawRectangleButton"); // NOI18N
+		DrawEllipseButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+		toolBar.add(DrawEllipseButton);
+
+		DrawSquareButton.setAction(actionMap.get("drawSquare")); // NOI18N
+		DrawSquareButton.setIcon(resourceMap.getIcon("DrawSquareButton.icon")); // NOI18N
+		DrawSquareButton.setText(resourceMap.getString("DrawRectangleButton.text")); // NOI18N
+		DrawSquareButton.setFocusable(false);
+		DrawSquareButton.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+		DrawSquareButton.setName("DrawSquareButton"); // NOI18N
+		DrawSquareButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+		toolBar.add(DrawSquareButton);
+
+		DrawSegmentButton.setAction(actionMap.get("drawSegment")); // NOI18N
+		DrawSegmentButton.setIcon(resourceMap.getIcon("DrawSegmentButton.icon")); // NOI18N
+		DrawSegmentButton.setText(resourceMap.getString("DrawSegmentButton.text")); // NOI18N
+		DrawSegmentButton.setFocusable(false);
+		DrawSegmentButton.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+		DrawSegmentButton.setName("DrawSegmentButton"); // NOI18N
+		DrawSegmentButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+		toolBar.add(DrawSegmentButton);
+
+		DrawPolygonButton.setAction(actionMap.get("drawPolygon")); // NOI18N
+		DrawPolygonButton.setIcon(resourceMap.getIcon("DrawPolygonButton.icon")); // NOI18N
+		DrawPolygonButton.setText(resourceMap.getString("DrawPolygonButton.text")); // NOI18N
+		DrawPolygonButton.setFocusable(false);
+		DrawPolygonButton.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+		DrawPolygonButton.setName("DrawPolygonButton"); // NOI18N
+		DrawPolygonButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+		toolBar.add(DrawPolygonButton);
+
+		BorderColorPicker.setAction(actionMap.get("selectBorderColor"));
+		BorderColorPicker.setIcon(resourceMap.getIcon("ColorsPicker.icon")); // NOI18N
+		BorderColorPicker.setText(resourceMap.getString("DragToggleButton.text")); // NOI18N
+		BorderColorPicker.setFocusable(false);
+		BorderColorPicker.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+		BorderColorPicker.setName("ColorPicker"); // NOI18N
+		BorderColorPicker.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+		toolBar.add(BorderColorPicker);
+
+		FillColorPicker.setAction(actionMap.get("selectFillColor"));
+		FillColorPicker.setIcon(resourceMap.getIcon("BackgroundIcon.icon")); // NOI18N
+		FillColorPicker.setText(resourceMap.getString("DragToggleButton.text")); // NOI18N
+		FillColorPicker.setFocusable(false);
+		FillColorPicker.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+		FillColorPicker.setName("ColorPicker"); // NOI18N
+		FillColorPicker.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+		toolBar.add(FillColorPicker);
+		
+		RotateLeftButton.setAction(actionMap.get("rotateLeft"));
+		RotateLeftButton.setIcon(resourceMap.getIcon("RotateLeftIcon.icon")); // NOI18N
+		RotateLeftButton.setText(resourceMap.getString("DragToggleButton.text")); // NOI18N
+		RotateLeftButton.setFocusable(false);
+		RotateLeftButton.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+		RotateLeftButton.setName("RotateLeftButton"); // NOI18N
+		RotateLeftButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+		toolBar.add(RotateLeftButton);
+
+		RotateRightButton.setAction(actionMap.get("rotateRight"));
+		RotateRightButton.setIcon(resourceMap.getIcon("RotateRightIcon.icon")); // NOI18N
+		RotateRightButton.setText(resourceMap.getString("DragToggleButton.text")); // NOI18N
+		RotateRightButton.setFocusable(false);
+		RotateRightButton.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+		RotateRightButton.setName("RotateRightButton"); // NOI18N
+		RotateRightButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+		toolBar.add(RotateRightButton);
+		
+		ExportButton.setAction(actionMap.get("save"));
+		ExportButton.setIcon(resourceMap.getIcon("SaveIcon.icon")); // NOI18N
+		ExportButton.setText(resourceMap.getString("DragToggleButton.text")); // NOI18N
+		ExportButton.setFocusable(false);
+		ExportButton.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+		ExportButton.setName("ExportButton"); // NOI18N
+		ExportButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+		toolBar.add(ExportButton);
+		borderSizeComboBox.setAction(actionMap.get("selectBorderSize"));
+		toolBar.add(borderSizeComboBox, BorderLayout.NORTH);
+
+		DragToggleButton.setIcon(resourceMap.getIcon("DragToggleButton.icon")); // NOI18N
+		DragToggleButton.setText(resourceMap.getString("DragToggleButton.text")); // NOI18N
+		DragToggleButton.setFocusable(false);
+		DragToggleButton.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+		DragToggleButton.setName("DragToggleButton"); // NOI18N
+		DragToggleButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+		toolBar.add(DragToggleButton);
+
+		viewPort.setName("viewPort"); // NOI18N
+
+		javax.swing.GroupLayout viewPortLayout = new javax.swing.GroupLayout(viewPort);
+		viewPort.setLayout(viewPortLayout);
+		viewPortLayout.setHorizontalGroup(viewPortLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+				.addGap(0, 591, Short.MAX_VALUE));
+		viewPortLayout.setVerticalGroup(viewPortLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+				.addGap(0, 399, Short.MAX_VALUE));
+
+		setComponent(viewPort);
+		setMenuBar(menuBar);
+		setStatusBar(statusPanel);
+		setToolBar(toolBar);
+	}// </editor-fold>//GEN-END:initComponents
+	
+	private void prepareToCreateShape(Point recentPoint) {
+		// set new endPoint
+		dialogProcessor.setEndPoint(recentPoint);
+		dialogProcessor.setLastLocation(recentPoint);
+		// remove previous element
+		dialogProcessor.shapeList.removeIf(n -> (n.isFinishDrawing() == false));
+	}
+	
+	private void deselectLastSelected() {
+		if(this.lastSelectedButton != null) {
+			this.lastSelectedButton.setSelected(false);
+		}
+	}
+	
+	private void selectButton(JButton button) {
+		this.deselectLastSelected();
+		button.setSelected(true);
+		this.lastSelectedButton = button;
+	}
+
+	// Variables declaration - do not modify//GEN-BEGIN:variables
+	private JToggleButton DragToggleButton;
+	private JButton DrawRectangleButton;
+//	private JButton DrawCicleShapeButton;
+	private JButton DrawEllipseButton;
+	private JButton DrawSquareButton;
+	private JButton DrawSegmentButton;
+	private JButton DrawPolygonButton;
+	private JButton BorderColorPicker;
+	private JButton FillColorPicker;
+	private JButton RotateLeftButton;
+	private JButton RotateRightButton;
+	private JButton ExportButton;
+	private JMenu editMenu;
+	private JMenu imageMenu;
+	private JMenuBar menuBar;
+	private JProgressBar progressBar;
+	private JLabel statusAnimationLabel;
+	private JLabel statusMessageLabel;
+	private JPanel statusPanel;
+	private JToolBar toolBar;
+	private JPanel viewPort;
+	private JComboBox<String> borderSizeComboBox;
+	private String[] items = { "1px", "2px", "3px"};
+	// End of variables declaration//GEN-END:variables
+
+	private final Timer messageTimer;
+	private final Timer busyIconTimer;
+	private final Icon idleIcon;
+	private final Icon[] busyIcons = new Icon[15];
+	private int busyIconIndex = 0;
+
+	private JDialog aboutBox;
+	private JButton lastSelectedButton;
+}

@@ -1,0 +1,52 @@
+package draw.Model;
+
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.Point;
+import java.awt.Polygon;
+
+public class PolygonShape extends draw.Model.Shape {
+    
+    public PolygonShape(Polygon rect) {
+        super(rect);
+    }
+
+    public PolygonShape(draw.Model.PolygonShape rectangle) {
+    }
+
+    /**
+     * Проверка за принадлежност на точка point към правоъгълника.
+     * В случая на правоъгълник този метод може да не бъде пренаписван, защото
+     * Реализацията съвпада с тази на абстрактния клас Shape, който проверява
+     * дали точката е в обхващащия правоъгълник на елемента (а той съвпада с
+     * елемента в този случай).
+     */
+    @Override
+    public boolean Contains(Point point) {
+        if ( super.Contains(point) ) {
+            //  Проверка дали е в обекта само, ако точката е в обхващащия правоъгълник.
+            //  В случая на правоъгълник - директно връщаме true
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    /**
+     * Частта, визуализираща конкретния примитив.
+     */
+    @Override
+    public void DrawSelf(Graphics grfx) {
+        super.DrawSelf(grfx);
+        Polygon polygon = getPolygon();
+//        grfx.fillRect(r.x, r.y, r.width, r.height);
+//        int xPoly[] = {150, 250, 325, 375, 450, 275, 100};
+//        int yPoly[] = {150, 100, 125, 225, 250, 375, 300};
+//        Polygon polygon = new Polygon(xPoly, yPoly, 5);
+        grfx.setColor(getFillColor());
+        grfx.fillPolygon(polygon);
+        grfx.setColor(Color.BLACK);
+        grfx.drawPolygon(polygon);
+    }
+}

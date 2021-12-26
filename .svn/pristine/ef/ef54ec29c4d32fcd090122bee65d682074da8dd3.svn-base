@@ -1,0 +1,184 @@
+/**
+ * Shape.java
+ */
+
+package draw.Model;
+
+import java.awt.*;
+import java.awt.geom.AffineTransform;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+
+import draw.Utils.Matrix;
+import draw.Utils.ShapeBorderSize;
+//import javafx.scene.transform.MatrixType;
+
+/**
+ *   Базовия клас на примитивите, който съдържа общите характеристики на примитивите.
+ */
+public abstract class Shape implements java.io.Serializable {
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
+	/**
+     *   Обхващащ правоъгълник на елемента.
+     */
+    private Rectangle rectangle;
+    
+    /**
+     *   Цвят на елемента.
+     */
+    private Color fillColor;
+    
+    /**
+     *   Цвят на външния контур.
+     */
+    private Color borderColor;
+    
+    /**
+     *   Размер на външния контур.
+     */
+    
+    private ShapeBorderSize shapeBorderSize;
+
+    protected boolean isFinishDrawing;
+    /*
+     * Трансформационна матрица
+     */
+  //  private Matrix transformMatrix;
+    protected AffineTransform transformMatrix;
+    protected double[][] matrix;
+	protected Point[] points;
+
+    public Shape() {
+    }
+
+    public Shape(Rectangle rect) {
+        rectangle = rect;
+    }
+
+    public Shape(draw.Model.Shape shape) {
+        this.setHeight(shape.getHeight());
+        this.setLocation(shape.getLocation());
+        this.rectangle = shape.rectangle;
+        this.setWidth(shape.getWidth());
+        this.setFillColor(shape.getFillColor());
+    }
+
+    /**
+     * Проверка дали точка point принадлежи на елемента.
+     * @param point - Точка.
+     * @return Връща true, ако точката принадлежи на елемента и false, ако не пренадлежи.
+     */
+    public boolean Contains(Point point) {
+        return getRectangle().contains(point);
+    }
+
+    /**
+     * Визуализира елемента.
+     * @param grfx - Къде да бъде визуализиран елемента.
+     */
+    public void DrawSelf(Graphics grfx) {
+        //  shape.Rectangle.Inflate(shape.BorderWidth, shape.BorderWidth)
+    }
+    
+    public void moveTranslateTo(Point next, Point last) {
+    	
+    }
+
+    public Rectangle getRectangle() {
+        return rectangle;
+    }
+
+    public void setRectangle(Rectangle value) {
+        rectangle = value;
+    }
+
+    public int getWidth() {
+        return this.getRectangle().width;
+    }
+
+    public void setWidth(int value) {
+        rectangle.width = value;
+    }
+
+    public int getHeight() {
+        return this.getRectangle().height;
+    }
+
+    public void setHeight(int value) {
+        rectangle.height = value;
+    }
+
+    public Point getLocation() {
+        return this.getRectangle().getLocation();
+    }
+
+    public void setLocation(Point value) {
+        rectangle.setLocation(value);
+    }
+
+    public java.awt.Color getFillColor() {
+        return fillColor;
+    }
+
+    public void setFillColor(java.awt.Color value) {
+        fillColor = value;
+    }
+
+    public ShapeBorderSize getBorderSize() {
+    	if(shapeBorderSize == null) {
+    		shapeBorderSize = new ShapeBorderSize(new Insets(1, 1, 1, 1));
+    	}
+    	return shapeBorderSize;
+    }
+
+    public void setBorderSize(ShapeBorderSize border) {
+    	this.shapeBorderSize = border;
+    }
+    
+    public java.awt.Color getBorderColor() {
+        return borderColor;
+    }
+
+    public void setBorderColor(java.awt.Color value) {
+        borderColor = value;
+    }
+
+	public boolean isFinishDrawing() {
+		return isFinishDrawing;
+	}
+
+	public void setFinishDrawing(boolean isFinishDrawing) {
+		this.isFinishDrawing = isFinishDrawing;
+	}
+	
+	public AffineTransform getTransformMatrix() {
+		return transformMatrix;
+	}
+
+	public void setTransformMatrix(AffineTransform matrix) {
+		this.transformMatrix = matrix;
+	}
+ 
+	protected void makeRotation(Graphics grfx) {
+		if(this.transformMatrix != null) {
+			Graphics2D g2d = (Graphics2D) grfx.create();
+			g2d.setTransform(this.transformMatrix);
+		}
+	}
+	
+	public void setPoints(Point[] points) {
+		this.points = points;
+	}
+	
+	public Point[] getPoints() {
+		return this.points;
+	}
+
+}

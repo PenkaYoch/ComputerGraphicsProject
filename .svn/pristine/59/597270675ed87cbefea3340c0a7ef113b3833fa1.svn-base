@@ -1,0 +1,59 @@
+package draw.Model;
+
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.Point;
+import java.awt.Rectangle;
+
+public class CircleShape extends Shape {
+
+
+	public CircleShape(Rectangle rect) {
+	        super(rect);
+	    }
+
+	public CircleShape(draw.Model.CircleShape rectangle) {
+	    }
+
+	/**
+	 * Проверка за принадлежност на точка point към правоъгълника. В случая на
+	 * правоъгълник този метод може да не бъде пренаписван, защото Реализацията
+	 * съвпада с тази на абстрактния клас Shape, който проверява дали точката е в
+	 * обхващащия правоъгълник на елемента (а той съвпада с елемента в този случай).
+	 */
+	@Override
+	public boolean Contains(Point point) {
+		Rectangle r = getRectangle();
+		points[1] = new Point(r.x, r.y);
+		points[3] = new Point(r.x + r.width, r.y + r.height);
+		int a = (points[3].x - points[0].x) / 2; // semi-major axis -> Find
+		int b = (points[3].y - points[0].y) / 2; // semi-minor axis
+		return (this.isPointInEllipse(r.getCenterX(), r.getCenterY(), r.x, r.y, a, b) <= 1);
+	}
+
+
+	private int isPointInEllipse(double h, double k, int x, int y, int a, int b) {
+		int p = ((int) Math.pow((x - h), 2) / (int) Math.pow(a, 2))
+				+ ((int) Math.pow((y - k), 2) / (int) Math.pow(b, 2));
+
+		return p;
+	}
+	/**
+	 * Частта, визуализираща конкретния примитив.
+	 */
+	@Override
+	public void DrawSelf(Graphics grfx) {
+		super.DrawSelf(grfx);
+		Rectangle r = getRectangle();
+		grfx.setColor(getFillColor());
+		grfx.fillOval(r.x, r.y, r.width, r.height);
+		grfx.setColor(Color.BLACK);
+		grfx.drawOval(r.x, r.y, r.width, r.height);
+		grfx.setColor(Color.BLACK);
+		grfx.drawLine((int)r.getMinX(), (int)r.getCenterY(), (int)r.getMaxX(), (int)r.getCenterY());
+		grfx.setColor(Color.BLACK);
+		grfx.drawLine((int)r.getMinX(), (int)r.getMinY(), (int)r.getMinX(), (int)r.getMaxY());
+		grfx.setColor(Color.BLACK);
+		grfx.drawLine((int)r.getMaxX(), (int)r.getMinY(), (int)r.getMaxX(), (int)r.getMaxY());
+	}
+}
